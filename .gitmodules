@@ -1,0 +1,3 @@
+[submodule "external/mesh-data-transfer"]
+	path = external/mesh-data-transfer
+	url = https://github.com/hannesdelbeke/mesh-data-transfer

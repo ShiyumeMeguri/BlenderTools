@@ -1,0 +1,68 @@
+import bpy
+import os
+
+def setup_camera_and_render_settings(resolution):
+    # Ensure there's a camera, create if necessary
+    camera = bpy.data.objects.get('UV_Camera')
+    if not camera:
+        camera_data = bpy.data.cameras.new(name='UV_Camera')
+        camera = bpy.data.objects.new('UV_Camera', camera_data)
+        bpy.context.scene.collection.objects.link(camera)
+    
+    # Set camera to orthographic projection
+    camera.data.type = 'ORTHO'
+    camera.data.ortho_scale = 1
+
+    # Set camera position
+    camera.location = (0.5, 0.5, 1)
+    camera.rotation_euler = (0, 0, 0)
+
+    # Set as active camera
+    bpy.context.scene.camera = camera
+
+    # Set render engine to Workbench and adjust settings
+    bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
+    bpy.context.scene.display.shading.light = 'FLAT'
+    bpy.context.scene.display.shading.color_type = 'TEXTURE'
+
+    # Set resolution and transparency
+    bpy.context.scene.render.resolution_x = resolution
+    bpy.context.scene.render.resolution_y = resolution
+    bpy.context.scene.render.film_transparent = True
+
+def render_uv_projections_to_texture(resolution=4096):
+    # Create directory for textures
+    blend_file_path = bpy.data.filepath
+    directory = os.path.join(os.path.dirname(blend_file_path), "Textures")
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Get or create the UVSync collection
+    uv_sync_collection = bpy.data.collections.get("UVSync")
+    if not uv_sync_collection:
+        print("UVSync collection does not exist.")
+        return
+
+    # Setup camera and render settings
+    setup_camera_and_render_settings(resolution)
+
+    # Hide all objects for rendering only UVSync objects
+    for obj in bpy.data.objects:
+        obj.hide_render = True
+
+    # Concatenate all UV meshes in UVSync to one image
+    output_file = os.path.join(directory, "UVSync_Combined.png")
+    bpy.context.scene.render.filepath = output_file
+
+    # Render each object in the UVSync collection
+    for obj in uv_sync_collection.objects:
+        if obj.type == 'MESH':
+            obj.hide_render = False
+
+    # Execute rendering
+    bpy.ops.render.render(write_still=True)
+
+    print(f"Combined texture saved to '{output_file}'")
+
+# Example usage
+render_uv_projections_to_texture()

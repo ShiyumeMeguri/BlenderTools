@@ -1,0 +1,47 @@
+import bpy
+import bmesh
+
+def compare_meshes(obj_a, obj_b):
+    # 确保两个网格的面数量相同
+    if len(obj_a.data.polygons) != len(obj_b.data.polygons):
+        return False
+
+    # 创建BMesh对象，更容易操作和比较顶点位置
+    bm_a = bmesh.new()
+    bm_a.from_mesh(obj_a.data)
+    bm_b = bmesh.new()
+    bm_b.from_mesh(obj_b.data)
+
+    # 确保顶点数量相同
+    if len(bm_a.verts) != len(bm_b.verts):
+        bm_a.free()
+        bm_b.free()
+        return False
+
+    # 使用BMesh，可以直接访问顶点的坐标
+    # 比较每个顶点的位置（在各自的局部空间中）
+    for vert_a, vert_b in zip(bm_a.verts, bm_b.verts):
+        if vert_a.co != vert_b.co:
+            bm_a.free()
+            bm_b.free()
+            return False
+
+    bm_a.free()
+    bm_b.free()
+    return True
+
+def link_meshes(obj_a, obj_b):
+    # 链接网格数据
+    obj_b.data = obj_a.data
+
+# 获取当前场景的所有网格对象
+mesh_objects = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH']
+
+# 遍历所有网格对象进行比较
+for i, obj_a in enumerate(mesh_objects):
+    for obj_b in mesh_objects[i+1:]:
+        # 比较网格
+        if compare_meshes(obj_a, obj_b):
+            # 如果网格相同，链接它们
+            link_meshes(obj_a, obj_b)
+            print(f"Linked {obj_a.name} and {obj_b.name}")
